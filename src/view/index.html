@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title id="projectTitle"></title>
+    <meta charset="utf-8" />
+    <!-- <meta http-equiv="X-UA-Compatible" content="IE=edge"> -->
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, user-scalable=no"
+    />
+
+    <!-- 위 3개의 메타 태그는 *반드시* head 태그의 처음에 와야합니다; 어떤 다른 콘텐츠들은 반드시 이 태그들 *다음에* 와야 합니다 -->
+    <script src="/js/lodash.min.js"></script>
+
+    <script src="/js/handlebars.js"></script>
+
+    <!-- Default Publishing -->
+    <!-- jQuery (부트스트랩의 자바스크립트 플러그인을 위해 필요합니다) -->
+    <script src="/js/jquery-3.4.1.min.js"></script>
+
+    <link href="/css/bootstrap.min.css" rel="stylesheet" />
+    <script src="/js/bootstrap.min.js"></script>
+
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css" />
+    <script
+      src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"
+      integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU="
+      crossorigin="anonymous"
+    ></script>
+
+    <!-- SVG Map 을 생성하기 위한 필수 Library -->
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="/js/svg/svg.js"></script>
+    <script src="/js/panzoom.min.js"></script>
+
+    <link href="/css/template/svg.filter.css" rel="stylesheet" />
+    <link href="/css/template/common.css" rel="stylesheet" />
+  </head>
+
+  <script>
+    const map = <%- JSON.stringify(map) %>;
+  </script>
+
+  <body>
+    <div id="wrap" class="wrap">
+      <!-- Header -->
+      <!--메인-->
+      <div class="container_body hidden" id="container_body">
+        <!-- Content -->
+        <div id="controlContent">
+          <!-- Svg Map -->
+          <div class="" id="structure">
+            <%- include("./plugInMapControlBox.html") %>
+
+            <!-- SVG canvas -->
+            <div class="svg_area" id="canvas">
+              <%- include('./filter.html') %> <%- include('./filter.btn.html') %>
+            </div>
+          </div>
+          <!-- Tables -->
+          <div class="hidden" id="operStatusTable">
+            <div class="container_row">
+              <p class="table_desc_area">
+                명령 목록 - 갱신시간 &nbsp;<span id="cmdUpdateDate"></span>
+              </p>
+              <div class="table-responsive default_area">
+                <table id="cmdTableBody" class="table table-bordered number_table">
+                  <thead>
+                    <tr>
+                      <th data-field="wrapCmdFormat">명령 형식</th>
+                      <th data-field="wrapCmdType">명령 타입</th>
+                      <th data-field="wrapCmdStep">명령 단계</th>
+                      <th data-field="wrapCmdId">명령 ID</th>
+                      <th data-field="wrapCmdName">명령 이름</th>
+                      <th data-field="wrapCmdCancel">명령 취소</th>
+                    </tr>
+                  </thead>
+                  <tbody id="cmdTableBodyDom"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="dialog-dynamic" title="" style="display: none;"></div>
+    <script id="dialog-dynamic-template" type="template">
+      <p>{{ confirmMsg }}</p>
+      {{#if isSetValue}}
+      <p>{{ setMsg }} <input type="number" min="{{ min }}" max="{{ max }}" name="" placeholder="{{ min }} ~ {{ max }}" id="dialog-dynamic-input" class="ui-widget-content ui-corner-all" /></p>
+      {{/if}}
+    </script>
+
+    <script src="/js/drawSvg/drawSvg.js"></script>
+    <script src="/js/drawSvg/drawTriggerImg.js"></script>
+
+    <script>
+      function showDynamicDialog(title, buttonFn) {
+        $('#dialog-dynamic').dialog({
+          width: 300,
+          modal: true,
+          title,
+          open: function () {
+            $('.ui-widget-overlay').bind('click', function () {
+              $('#dialog-dynamic').dialog('close');
+            });
+          },
+          closeText: 'Close',
+          buttons: buttonFn,
+        });
+      }
+    </script>
+
+    <!-- SVG Map 세팅 -->
+    <script>
+      initDrawSvg(false);
+
+      // 캔버스 생성
+      const svgCanvas = SVG().addTo(`#canvas`).size('100%', '100%');
+      // SVG Canvas 속성 정의
+      svgCanvas.attr({
+        id: 'svgCanvas',
+        class: 'svg_map',
+        preserveAspectRatio: 'xMidYMin meet',
+      });
+
+      // defs Element를 SVG Element 자식 요소 최상위로 정의
+      svgCanvas.defs();
+      // string으로 변환하여 붙여넣음. Dom 요소로 붙여넣을 경우 동작하지 않음
+      $('defs').html($('#svgFilter').html() + $('#svgBtnFilter').html());
+      // id 중복을 막기위한 filter 요소 삭제
+      document.querySelector('#svgFilter').remove();
+      document.querySelector('#svgBtnFilter').remove();
+
+      drawSvgBasePlace(svgCanvas); // 멥 그리기
+
+      runSimulator();
+
+      threImgManager.handleThresholdClear();
+
+      // updateCommand([
+      //   {
+      //     wrapCmdId: 'waterSupplyPipeA',
+      //     wrapCmdStep: 'WAIT',
+      //   },
+      //   {
+      //     wrapCmdId: 'closeAllShutter',
+      //     wrapCmdStep: 'END',
+      //   },
+      // ]);
+
+      // showNodeData('ST_CT', 'AUTO');
+      setTimeout(() => {
+        // threImgManager.handleThresholdClear();
+        // runSimulator();
+      }, 1000 * 1);
+
+      setInterval(() => {
+        // runSimulator();
+      }, 1000 * 5);
+
+      // FIXME:
+      // alertDeviceCmdConfirm(mdNodeStorage.get('P_001'));
+      // alertDeviceCmdConfirm(mdNodeStorage.get('ST_015'));
+    </script>
+
+    <script>
+      $('#container_body').removeClass('hidden');
+    </script>
+  </body>
+</html>
